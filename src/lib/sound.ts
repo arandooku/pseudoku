@@ -1,4 +1,5 @@
 let ctx: AudioContext | null = null;
+let master: GainNode | null = null;
 let muted = false;
 
 function getCtx(): AudioContext | null {
@@ -7,6 +8,9 @@ function getCtx(): AudioContext | null {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 0.55;
+    master.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   return ctx;
@@ -15,43 +19,84 @@ function getCtx(): AudioContext | null {
 export function setMuted(m: boolean) { muted = m; }
 export function isMuted() { return muted; }
 
-function tone(freq: number, durMs: number, type: OscillatorType = 'sine', gain = 0.18, glide?: number) {
+interface VoiceOpts {
+  freq: number;
+  dur: number;
+  type?: OscillatorType;
+  gain?: number;
+  glide?: number;
+  cutoff?: number;
+  q?: number;
+  attack?: number;
+  delay?: number;
+}
+
+function voice(o: VoiceOpts) {
   if (muted) return;
   const ac = getCtx();
-  if (!ac) return;
+  if (!ac || !master) return;
+  const start = ac.currentTime + (o.delay ?? 0);
   const osc = ac.createOscillator();
   const g = ac.createGain();
-  osc.type = type;
-  osc.frequency.value = freq;
-  if (glide !== undefined) {
-    osc.frequency.exponentialRampToValueAtTime(Math.max(20, glide), ac.currentTime + durMs / 1000);
+  const lp = ac.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = o.cutoff ?? 2400;
+  lp.Q.value = o.q ?? 0.7;
+  osc.type = o.type ?? 'sine';
+  osc.frequency.setValueAtTime(o.freq, start);
+  if (o.glide !== undefined) {
+    osc.frequency.exponentialRampToValueAtTime(Math.max(30, o.glide), start + o.dur);
   }
-  g.gain.setValueAtTime(0.0001, ac.currentTime);
-  g.gain.exponentialRampToValueAtTime(gain, ac.currentTime + 0.008);
-  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + durMs / 1000);
-  osc.connect(g).connect(ac.destination);
-  osc.start();
-  osc.stop(ac.currentTime + durMs / 1000 + 0.02);
+  const peak = o.gain ?? 0.18;
+  const atk = o.attack ?? 0.006;
+  g.gain.setValueAtTime(0.0001, start);
+  g.gain.exponentialRampToValueAtTime(peak, start + atk);
+  g.gain.exponentialRampToValueAtTime(0.0001, start + o.dur);
+  osc.connect(lp).connect(g).connect(master);
+  osc.start(start);
+  osc.stop(start + o.dur + 0.03);
+}
+
+function noiseClick(dur: number, cutoff: number, gain: number) {
+  if (muted) return;
+  const ac = getCtx();
+  if (!ac || !master) return;
+  const len = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const hp = ac.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = cutoff;
+  const g = ac.createGain();
+  g.gain.value = gain;
+  src.connect(hp).connect(g).connect(master);
+  src.start();
 }
 
 export const sfx = {
-  tap: () => tone(520, 50, 'triangle', 0.08),
-  place: () => tone(660, 90, 'sine', 0.14),
+  tap: () => noiseClick(0.035, 1800, 0.12),
+  place: () => voice({ freq: 740, dur: 0.18, type: 'sine', gain: 0.22, cutoff: 2600, attack: 0.004 }),
   correct: () => {
-    tone(660, 80, 'sine', 0.14);
-    setTimeout(() => tone(880, 110, 'sine', 0.14), 70);
+    voice({ freq: 660, dur: 0.22, type: 'sine', gain: 0.2, cutoff: 2400 });
+    voice({ freq: 990, dur: 0.28, type: 'sine', gain: 0.18, cutoff: 2800, delay: 0.09 });
   },
-  wrong: () => tone(220, 180, 'sawtooth', 0.16, 120),
+  wrong: () => {
+    noiseClick(0.05, 600, 0.08);
+    voice({ freq: 180, dur: 0.22, type: 'sine', gain: 0.22, glide: 110, cutoff: 900, attack: 0.003 });
+  },
   unlock: () => {
-    const steps = [523.25, 659.25, 783.99, 1046.5];
-    steps.forEach((f, i) => setTimeout(() => tone(f, 180, 'triangle', 0.16), i * 90));
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((f, i) => voice({ freq: f, dur: 0.28, type: 'triangle', gain: 0.16, cutoff: 2600, delay: i * 0.08 }));
   },
   win: () => {
-    const steps = [523.25, 659.25, 783.99, 1046.5, 1318.5];
-    steps.forEach((f, i) => setTimeout(() => tone(f, 220, 'sine', 0.18), i * 110));
+    const notes = [523.25, 659.25, 783.99, 987.77, 1318.5];
+    notes.forEach((f, i) => voice({ freq: f, dur: 0.34, type: 'sine', gain: 0.2, cutoff: 3000, delay: i * 0.1 }));
   },
   fail: () => {
-    tone(330, 220, 'sawtooth', 0.18, 90);
-    setTimeout(() => tone(220, 280, 'sawtooth', 0.18, 60), 200);
+    voice({ freq: 300, dur: 0.3, type: 'sine', gain: 0.22, glide: 160, cutoff: 1200 });
+    voice({ freq: 200, dur: 0.42, type: 'sine', gain: 0.2, glide: 90, cutoff: 900, delay: 0.22 });
   },
 };
