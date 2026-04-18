@@ -18,6 +18,9 @@ function CellInner({ index, value, given, notes, selected, peer, sameDigit, conf
   const selectCell = useGame((s) => s.selectCell);
   const isWrong = value !== 0 && value !== solution && !given;
   const isRight = value !== 0 && value === solution && !given;
+  const r = Math.floor(index / 9) + 1;
+  const c = (index % 9) + 1;
+  const label = `Row ${r} column ${c}${given ? `, given ${value}` : value ? `, ${value}` : ', empty'}`;
 
   const bg = selected
     ? 'bg-accent/30'
@@ -41,7 +44,8 @@ function CellInner({ index, value, given, notes, selected, peer, sameDigit, conf
     <button
       onClick={() => selectCell(index)}
       className={`relative flex items-center justify-center transition-colors duration-150 btn-press ${bg}`}
-      aria-label={`cell ${index}`}
+      aria-label={label}
+      aria-pressed={selected}
     >
       {value !== 0 ? (
         <motion.span

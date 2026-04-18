@@ -123,14 +123,14 @@ function makePuzzle(full: Grid, difficulty: Difficulty, rng: Rng): Grid {
     const savedB = puzzle[mirror];
     if (savedA === 0) continue;
     puzzle[pos] = 0;
-    const removingMirror = mirror !== pos && savedB !== 0;
-    if (removingMirror) puzzle[mirror] = 0;
+    const canDouble = mirror !== pos && savedB !== 0 && clues - 2 >= targetClues;
+    if (canDouble) puzzle[mirror] = 0;
     if (countSolutions(puzzle, 2) !== 1) {
       puzzle[pos] = savedA;
-      if (removingMirror) puzzle[mirror] = savedB;
+      if (canDouble) puzzle[mirror] = savedB;
     } else {
       clues--;
-      if (removingMirror) clues--;
+      if (canDouble) clues--;
     }
   }
   return puzzle;

@@ -14,18 +14,19 @@ export default function App() {
   const screen = useGame((s) => s.screen);
   const save = useGame((s) => s.save);
   const failed = useGame((s) => s.failed);
-  const tick = useGame((s) => s.tick);
 
   useEffect(() => {
-    if (screen !== 'play' || !save || save.completed || failed) return;
+    if (screen !== 'play') return;
     let last = performance.now();
     const id = window.setInterval(() => {
+      const s = useGame.getState();
+      if (!s.save || s.save.completed || s.failed) return;
       const now = performance.now();
-      tick(now - last);
+      s.tick(now - last);
       last = now;
     }, 1000);
     return () => window.clearInterval(id);
-  }, [screen, save, failed, tick]);
+  }, [screen]);
 
   return (
     <main className="relative min-h-screen w-full flex flex-col items-center">

@@ -58,10 +58,36 @@ function daysDiff(a: string, b: string): number {
   return Math.round((db - da) / 86_400_000);
 }
 
+function isValidSave(v: unknown): v is SaveState {
+  if (!v || typeof v !== 'object') return false;
+  const s = v as Record<string, unknown>;
+  const diffs = ['easy', 'medium', 'hard'];
+  return (
+    Array.isArray(s.puzzle) && s.puzzle.length === 81 &&
+    Array.isArray(s.solution) && s.solution.length === 81 &&
+    Array.isArray(s.given) && s.given.length === 81 &&
+    Array.isArray(s.user) && s.user.length === 81 &&
+    Array.isArray(s.notes) && s.notes.length === 81 &&
+    typeof s.mistakes === 'number' && Number.isFinite(s.mistakes) &&
+    typeof s.elapsedMs === 'number' && Number.isFinite(s.elapsedMs) &&
+    typeof s.difficulty === 'string' && diffs.includes(s.difficulty) &&
+    typeof s.seed === 'number' &&
+    typeof s.startedAt === 'string' &&
+    typeof s.completed === 'boolean' &&
+    typeof s.hintsUsed === 'number' && Number.isFinite(s.hintsUsed)
+  );
+}
+
 function loadSave(): SaveState | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isValidSave(parsed)) {
+      localStorage.removeItem(SAVE_KEY);
+      return null;
+    }
+    return parsed;
   } catch { return null; }
 }
 function writeSave(s: SaveState | null) {
@@ -70,11 +96,37 @@ function writeSave(s: SaveState | null) {
     else localStorage.removeItem(SAVE_KEY);
   } catch { /* quota */ }
 }
+function num(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
+}
+function numOrNull(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
+
 function loadStats(): Stats {
   try {
     const raw = localStorage.getItem(STATS_KEY);
     if (!raw) return defaultStats;
-    return { ...defaultStats, ...JSON.parse(raw) };
+    const p = JSON.parse(raw) as Record<string, unknown>;
+    const solved = (p.solved as Record<string, unknown>) ?? {};
+    const bestMs = (p.bestMs as Record<string, unknown>) ?? {};
+    return {
+      solved: {
+        easy: num(solved.easy, 0),
+        medium: num(solved.medium, 0),
+        hard: num(solved.hard, 0),
+      },
+      bestMs: {
+        easy: numOrNull(bestMs.easy),
+        medium: numOrNull(bestMs.medium),
+        hard: numOrNull(bestMs.hard),
+      },
+      streakDays: num(p.streakDays, 0),
+      lastPlayedDate: typeof p.lastPlayedDate === 'string' ? p.lastPlayedDate : null,
+      noMistakeRun: num(p.noMistakeRun, 0),
+      totalMsPlayed: num(p.totalMsPlayed, 0),
+      hardWinsFlawless: num(p.hardWinsFlawless, 0),
+    };
   } catch { return defaultStats; }
 }
 function writeStats(s: Stats) {

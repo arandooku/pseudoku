@@ -21,6 +21,7 @@ export default function Keypad() {
   }, [save]);
 
   useEffect(() => {
+    if (!save) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key >= '1' && e.key <= '9') placeDigit(Number(e.key));
       else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') clearCell();
@@ -28,7 +29,7 @@ export default function Keypad() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [placeDigit, clearCell, toggleNote]);
+  }, [save, placeDigit, clearCell, toggleNote]);
 
   if (!save) return null;
 
