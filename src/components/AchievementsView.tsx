@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { ChevronLeft, Lock } from 'lucide-react';
 import { useGame } from '../store/game';
 import { ACHIEVEMENTS } from '../lib/achievements';
 
@@ -17,12 +18,15 @@ export default function AchievementsView() {
       transition={{ duration: 0.3 }}
       className="flex flex-col flex-1 px-5 py-6 gap-4"
     >
-      <button onClick={() => setScreen('home')} className="text-sm text-ink-400 self-start">
-        ← back
+      <button
+        onClick={() => setScreen('home')}
+        className="btn-press text-sm text-muted-c self-start flex items-center gap-1 hover:text-white transition"
+      >
+        <ChevronLeft size={16} /> Back
       </button>
       <header>
         <h2 className="font-display text-4xl">Badges</h2>
-        <p className="text-ink-400 text-sm mt-1">
+        <p className="text-muted-c text-sm mt-1">
           {progress} unlocked · {stats.solved.easy + stats.solved.medium + stats.solved.hard} puzzles solved
         </p>
       </header>
@@ -36,15 +40,22 @@ export default function AchievementsView() {
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03 }}
-              className={`glass rounded-xl p-3 flex items-center gap-3 ${has ? '' : 'opacity-50'}`}
+              className={`glass rounded-xl p-3 flex items-center gap-3 transition-all ${has ? 'halo-pulse' : 'opacity-55'}`}
             >
-              <div className={`text-2xl ${has ? '' : 'grayscale'}`}>{has ? a.emoji : '🔒'}</div>
+              <div
+                className="h-10 w-10 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
+                style={has
+                  ? { background: 'linear-gradient(135deg, var(--accent), var(--accent-glow))', boxShadow: '0 0 14px rgba(139,92,246,0.5)' }
+                  : { background: 'rgba(148,163,184,0.15)' }}
+              >
+                {has ? a.emoji : <Lock size={18} />}
+              </div>
               <div className="flex-1">
                 <div className="text-sm font-medium">{a.title}</div>
-                <div className="text-xs text-ink-400">{a.desc}</div>
+                <div className="text-xs text-muted-c">{a.desc}</div>
               </div>
               {has && (
-                <span className="text-[10px] uppercase tracking-widest text-accent-glow">Unlocked</span>
+                <span className="text-[10px] uppercase tracking-widest text-accent-glow-c">Unlocked</span>
               )}
             </motion.div>
           );

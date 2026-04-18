@@ -22,8 +22,8 @@ export default function Board() {
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="relative aspect-square w-full mx-auto select-none"
     >
-      <div className="absolute inset-0 rounded-2xl glass p-1.5">
-        <div className="grid grid-cols-9 grid-rows-9 gap-[1px] w-full h-full rounded-xl overflow-hidden bg-ink-800/60">
+      <div className="absolute inset-0 rounded-2xl glass p-1.5" data-board>
+        <div className="grid grid-cols-9 grid-rows-9 gap-[1px] w-full h-full rounded-xl overflow-hidden" style={{ background: 'rgba(148,163,184,0.18)' }}>
           {Array.from({ length: 81 }, (_, i) => {
             const r = Math.floor(i / 9), c = i % 9;
             const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
@@ -57,7 +57,7 @@ function BoxBorders() {
     <div className="pointer-events-none absolute inset-1.5 rounded-xl">
       <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
         {Array.from({ length: 9 }, (_, i) => (
-          <div key={i} className="border border-ink-400/30" />
+          <div key={i} style={{ borderWidth: 1, borderColor: 'rgba(148,163,184,0.35)' }} />
         ))}
       </div>
     </div>

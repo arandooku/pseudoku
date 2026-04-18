@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { Pencil, Eraser, Lightbulb, Volume2, VolumeX, Home as HomeIcon } from 'lucide-react';
 import { useGame } from '../store/game';
 
 export default function Keypad() {
@@ -36,11 +37,11 @@ export default function Keypad() {
   return (
     <div className="flex flex-col gap-2 px-1 pb-2">
       <div className="grid grid-cols-5 gap-2">
-        <ActionBtn onClick={() => toggleNote()} active={noteMode} label="Notes" sub={noteMode ? 'on' : 'off'} />
-        <ActionBtn onClick={clearCell} label="Erase" />
-        <ActionBtn onClick={hint} label="Hint" sub={`used ${save.hintsUsed}`} />
-        <ActionBtn onClick={toggleMute} label={muted ? 'Muted' : 'Sound'} />
-        <ActionBtn onClick={() => setScreen('home')} label="Home" />
+        <ActionBtn onClick={() => toggleNote()} active={noteMode} icon={<Pencil size={16} />} label="Notes" sub={noteMode ? 'on' : 'off'} />
+        <ActionBtn onClick={clearCell} icon={<Eraser size={16} />} label="Erase" />
+        <ActionBtn onClick={hint} icon={<Lightbulb size={16} />} label="Hint" sub={`used ${save.hintsUsed}`} />
+        <ActionBtn onClick={toggleMute} icon={muted ? <VolumeX size={16} /> : <Volume2 size={16} />} label={muted ? 'Muted' : 'Sound'} />
+        <ActionBtn onClick={() => setScreen('home')} icon={<HomeIcon size={16} />} label="Home" />
       </div>
       <div className="grid grid-cols-9 gap-1.5">
         {Array.from({ length: 9 }, (_, i) => i + 1).map((d) => {
@@ -48,15 +49,18 @@ export default function Keypad() {
           return (
             <motion.button
               key={d}
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.85, rotate: -4 }}
+              whileHover={done ? {} : { scale: 1.05, y: -2 }}
               onClick={() => placeDigit(d)}
               disabled={done}
               className={`relative aspect-[3/4] rounded-xl glass btn-press flex flex-col items-center justify-center digit text-2xl ${
-                done ? 'opacity-30' : 'hover:bg-ink-800/70'
-              } ${noteMode ? 'ring-1 ring-accent/40' : ''}`}
+                done ? 'opacity-30' : ''
+              } ${noteMode ? 'ring-1 ring-accent-c' : ''}`}
+              style={noteMode ? { boxShadow: '0 0 0 1px var(--accent)' } : undefined}
             >
               <span>{d}</span>
-              <span className="absolute bottom-1 text-[10px] text-ink-400 digit">{9 - counts[d]}</span>
+              <span className="absolute bottom-1 text-[10px] text-muted-c digit">{9 - counts[d]}</span>
+              {done && <span className="absolute inset-0 rounded-xl bg-[var(--accent)]/20 pointer-events-none" />}
             </motion.button>
           );
         })}
@@ -65,17 +69,19 @@ export default function Keypad() {
   );
 }
 
-function ActionBtn({ onClick, label, sub, active }: { onClick: () => void; label: string; sub?: string; active?: boolean }) {
+function ActionBtn({ onClick, icon, label, sub, active }: { onClick: () => void; icon: React.ReactNode; label: string; sub?: string; active?: boolean }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.9 }}
+      whileTap={{ scale: 0.88 }}
       onClick={onClick}
       className={`glass btn-press rounded-xl py-2 flex flex-col items-center justify-center gap-0.5 ${
-        active ? 'bg-accent/25 ring-1 ring-accent' : ''
+        active ? 'halo-pulse' : ''
       }`}
+      style={active ? { background: 'rgba(var(--glass-rgb),0.8)', boxShadow: '0 0 0 1px var(--accent), 0 0 14px rgba(139,92,246,0.4)' } : undefined}
     >
-      <span className="text-xs font-medium">{label}</span>
-      {sub && <span className="text-[9px] uppercase tracking-widest text-ink-400">{sub}</span>}
+      <span style={{ color: active ? 'var(--accent-glow)' : 'currentColor' }}>{icon}</span>
+      <span className="text-[10px] font-medium leading-none">{label}</span>
+      {sub && <span className="text-[8px] uppercase tracking-widest text-muted-c">{sub}</span>}
     </motion.button>
   );
 }

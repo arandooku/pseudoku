@@ -13,14 +13,25 @@ const ACH_KEY = 'pseudoku:achievements';
 const defaultStats: Stats = {
   solved: { easy: 0, medium: 0, hard: 0 },
   bestMs: { easy: null, medium: null, hard: null },
+  bestScore: { easy: 0, medium: 0, hard: 0 },
   streakDays: 0,
   lastPlayedDate: null,
   noMistakeRun: 0,
   totalMsPlayed: 0,
   hardWinsFlawless: 0,
+  bestCombo: 0,
 };
 
 type Screen = 'home' | 'play' | 'achievements';
+
+export interface FxEvent {
+  id: number;
+  kind: 'unit' | 'burst' | 'shake' | 'combo' | 'flash';
+  cells?: number[];
+  cell?: number;
+  combo?: number;
+  tone?: 'good' | 'bad' | 'great';
+}
 
 interface GameStore {
   screen: Screen;
@@ -32,6 +43,7 @@ interface GameStore {
   failed: boolean;
   lastUnlock: string | null;
   muted: boolean;
+  fx: FxEvent[];
 
   newGame: (difficulty: Difficulty) => void;
   resume: () => boolean;
@@ -45,6 +57,12 @@ interface GameStore {
   dismissToast: () => void;
   toggleMute: () => void;
   purgeAll: () => void;
+  consumeFx: (id: number) => void;
+}
+
+let fxCounter = 0;
+function emitFx(existing: FxEvent[], ev: Omit<FxEvent, 'id'>): FxEvent[] {
+  return [...existing, { ...ev, id: ++fxCounter }];
 }
 
 function todayISO(): string {
@@ -78,6 +96,15 @@ function isValidSave(v: unknown): v is SaveState {
   );
 }
 
+function migrateSave(s: SaveState): SaveState {
+  return {
+    ...s,
+    score: typeof (s as unknown as { score: unknown }).score === 'number' ? s.score : 0,
+    combo: typeof (s as unknown as { combo: unknown }).combo === 'number' ? s.combo : 0,
+    bestCombo: typeof (s as unknown as { bestCombo: unknown }).bestCombo === 'number' ? s.bestCombo : 0,
+  };
+}
+
 function loadSave(): SaveState | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -87,7 +114,7 @@ function loadSave(): SaveState | null {
       localStorage.removeItem(SAVE_KEY);
       return null;
     }
-    return parsed;
+    return migrateSave(parsed);
   } catch { return null; }
 }
 function writeSave(s: SaveState | null) {
@@ -126,6 +153,11 @@ function loadStats(): Stats {
       noMistakeRun: num(p.noMistakeRun, 0),
       totalMsPlayed: num(p.totalMsPlayed, 0),
       hardWinsFlawless: num(p.hardWinsFlawless, 0),
+      bestCombo: num(p.bestCombo, 0),
+      bestScore: (() => {
+        const bs = (p.bestScore as Record<string, unknown>) ?? {};
+        return { easy: num(bs.easy, 0), medium: num(bs.medium, 0), hard: num(bs.hard, 0) };
+      })(),
     };
   } catch { return defaultStats; }
 }
@@ -154,6 +186,7 @@ export const useGame = create<GameStore>((set, get) => ({
   failed: false,
   lastUnlock: null,
   muted: false,
+  fx: [],
 
   newGame: (difficulty) => {
     const { puzzle, solution, given, seed } = generate(difficulty);
@@ -170,10 +203,15 @@ export const useGame = create<GameStore>((set, get) => ({
       startedAt: new Date().toISOString(),
       completed: false,
       hintsUsed: 0,
+      score: 0,
+      combo: 0,
+      bestCombo: 0,
     };
     writeSave(save);
-    set({ save, screen: 'play', selectedCell: null, noteMode: false, failed: false });
+    set({ save, screen: 'play', selectedCell: null, noteMode: false, failed: false, fx: [] });
   },
+
+  consumeFx: (id) => set((st) => ({ fx: st.fx.filter((e) => e.id !== id) })),
 
   resume: () => {
     const s = loadSave();
@@ -223,21 +261,78 @@ export const useGame = create<GameStore>((set, get) => ({
     for (let rr = br; rr < br + 3; rr++) for (let cc = bc; cc < bc + 3; cc++) notes[rr * 9 + cc] &= mask;
 
     const correct = save.solution[selectedCell] === d;
+    let fx = get().fx;
+
+    let combo = save.combo;
+    let bestCombo = save.bestCombo;
+    let score = save.score;
+
+    if (correct) {
+      combo += 1;
+      bestCombo = Math.max(bestCombo, combo);
+      const base = 20;
+      const comboBonus = Math.min(combo, 9) * 5;
+      score += base + comboBonus;
+      sfx.place(); haptic.soft();
+      fx = emitFx(fx, { kind: 'burst', cell: selectedCell, tone: combo >= 3 ? 'great' : 'good' });
+      if (combo >= 3) fx = emitFx(fx, { kind: 'combo', combo });
+    } else {
+      combo = 0;
+      score = Math.max(0, score - 25);
+      sfx.wrong(); haptic.wrong();
+      fx = emitFx(fx, { kind: 'shake', cell: selectedCell });
+      fx = emitFx(fx, { kind: 'flash', tone: 'bad' });
+    }
+
+    // Detect completed units (row/col/box) AFTER placing correct digit.
+    if (correct) {
+      const r = Math.floor(selectedCell / 9), c = selectedCell % 9;
+      const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+      const check = (cells: number[]): number[] | null => {
+        const vals = cells.map((i) => user[i]);
+        if (vals.every((v) => v !== 0)) {
+          const set = new Set(vals);
+          if (set.size === 9) return cells;
+        }
+        return null;
+      };
+      const rowCells = Array.from({ length: 9 }, (_, k) => r * 9 + k);
+      const colCells = Array.from({ length: 9 }, (_, k) => k * 9 + c);
+      const boxCells: number[] = [];
+      for (let rr = br; rr < br + 3; rr++) for (let cc = bc; cc < bc + 3; cc++) boxCells.push(rr * 9 + cc);
+
+      let bonus = 0;
+      const completed = [check(rowCells), check(colCells), check(boxCells)].filter(Boolean) as number[][];
+      for (const unit of completed) {
+        fx = emitFx(fx, { kind: 'unit', cells: unit });
+        bonus += 150;
+      }
+      score += bonus;
+    }
+
     const nextSave: SaveState = {
       ...save,
       user,
       notes,
       mistakes: save.mistakes + (correct ? 0 : 1),
+      score,
+      combo,
+      bestCombo,
     };
-
-    if (correct) { sfx.place(); haptic.soft(); }
-    else { sfx.wrong(); haptic.wrong(); }
 
     const maxMistakes = DIFFICULTY_MAX_MISTAKES[save.difficulty];
     const failed = nextSave.mistakes >= maxMistakes;
 
     if (isComplete(user, save.solution)) {
       nextSave.completed = true;
+      // Final score bonus: difficulty multiplier + speed + flawless + no-hints
+      const diffMul = save.difficulty === 'hard' ? 3 : save.difficulty === 'medium' ? 2 : 1;
+      const elapsedSec = nextSave.elapsedMs / 1000;
+      const speedBonus = Math.max(0, 1000 - Math.floor(elapsedSec * 2)) * diffMul;
+      const flawless = nextSave.mistakes === 0 ? 500 * diffMul : 0;
+      const noHints = nextSave.hintsUsed === 0 ? 300 * diffMul : 0;
+      nextSave.score = nextSave.score + speedBonus + flawless + noHints;
+
       const today = todayISO();
       const stats = get().stats;
       const elapsed = nextSave.elapsedMs;
@@ -247,6 +342,8 @@ export const useGame = create<GameStore>((set, get) => ({
         ...stats,
         solved: { ...stats.solved, [diff]: stats.solved[diff] + 1 },
         bestMs: { ...stats.bestMs, [diff]: prevBest === null ? elapsed : Math.min(prevBest, elapsed) },
+        bestScore: { ...stats.bestScore, [diff]: Math.max(stats.bestScore[diff], nextSave.score) },
+        bestCombo: Math.max(stats.bestCombo, nextSave.bestCombo),
         totalMsPlayed: stats.totalMsPlayed + elapsed,
         noMistakeRun: nextSave.mistakes === 0 ? stats.noMistakeRun + 1 : 0,
         hardWinsFlawless: stats.hardWinsFlawless + (diff === 'hard' && nextSave.mistakes === 0 ? 1 : 0),
@@ -265,13 +362,14 @@ export const useGame = create<GameStore>((set, get) => ({
       const unlocked = [...get().unlocked, ...newly];
       if (newly.length) writeUnlocked(unlocked);
       sfx.win(); haptic.win();
-      set({ save: nextSave, stats: newStats, unlocked, lastUnlock: newly[0] ?? null, failed: false });
+      fx = emitFx(fx, { kind: 'flash', tone: 'great' });
+      set({ save: nextSave, stats: newStats, unlocked, lastUnlock: newly[0] ?? null, failed: false, fx });
       return;
     }
 
     writeSave(nextSave);
     if (failed) { sfx.fail(); haptic.wrong(); }
-    set({ save: nextSave, failed });
+    set({ save: nextSave, failed, fx });
   },
 
   clearCell: () => {

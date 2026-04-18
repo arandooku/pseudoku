@@ -9,11 +9,16 @@ import Celebration from './components/Celebration';
 import FailScreen from './components/FailScreen';
 import AchievementsView from './components/AchievementsView';
 import AchievementToast from './components/AchievementToast';
+import FX from './components/FX';
+import TitleBg from './components/TitleBg';
+import { applyTheme, loadTheme } from './lib/theme';
 
 export default function App() {
   const screen = useGame((s) => s.screen);
   const save = useGame((s) => s.save);
   const failed = useGame((s) => s.failed);
+
+  useEffect(() => { applyTheme(loadTheme()); }, []);
 
   useEffect(() => {
     if (screen !== 'play') return;
@@ -30,8 +35,9 @@ export default function App() {
 
   return (
     <main className="relative min-h-screen w-full flex flex-col items-center">
+      {screen === 'home' && <TitleBg />}
       <div
-        className="w-full max-w-[520px] flex flex-col flex-1"
+        className="relative z-10 w-full max-w-[520px] flex flex-col flex-1"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)', paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
       >
         <AnimatePresence mode="wait">
@@ -52,6 +58,7 @@ export default function App() {
         {failed && !save?.completed && <FailScreen key="fail" />}
       </AnimatePresence>
 
+      <FX />
       <AchievementToast />
     </main>
   );

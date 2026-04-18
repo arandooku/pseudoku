@@ -22,43 +22,45 @@ function CellInner({ index, value, given, notes, selected, peer, sameDigit, conf
   const c = (index % 9) + 1;
   const label = `Row ${r} column ${c}${given ? `, given ${value}` : value ? `, ${value}` : ', empty'}`;
 
-  const bg = selected
-    ? 'bg-accent/30'
+  const bgStyle: React.CSSProperties = selected
+    ? { background: 'var(--cell-bg-selected)' }
     : conflict || isWrong
-      ? 'bg-danger/20'
+      ? { background: 'rgba(239,68,68,0.2)' }
       : sameDigit
-        ? 'bg-accent/15'
+        ? { background: 'rgba(var(--glass-rgb),0.4)', boxShadow: 'inset 0 0 0 1px var(--accent)' }
         : peer
-          ? 'bg-ink-800/80'
-          : 'bg-ink-900/70';
+          ? { background: 'var(--cell-bg-peer)' }
+          : { background: 'var(--cell-bg)' };
 
-  const textColor = given
-    ? 'text-ink-100'
+  const textStyle: React.CSSProperties = given
+    ? { color: 'var(--text-color)' }
     : isWrong
-      ? 'text-danger'
+      ? { color: 'var(--danger-c)' }
       : isRight
-        ? 'text-accent-glow'
-        : 'text-ink-200';
+        ? { color: 'var(--accent-glow)' }
+        : { color: 'var(--text-color)', opacity: 0.92 };
 
   return (
     <button
       onClick={() => selectCell(index)}
-      className={`relative flex items-center justify-center transition-colors duration-150 btn-press ${bg}`}
+      style={bgStyle}
+      className="relative flex items-center justify-center transition-colors duration-150 btn-press overflow-hidden"
       aria-label={label}
       aria-pressed={selected}
     >
       {value !== 0 ? (
         <motion.span
           key={value + (given ? 'g' : 'u')}
-          initial={given ? false : { scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-          className={`digit text-[min(5.5vw,2rem)] leading-none ${textColor} ${isWrong ? 'animate-shake' : ''}`}
+          initial={given ? false : { scale: 0.3, rotate: -12, opacity: 0 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 520, damping: 16 }}
+          style={textStyle}
+          className={`digit text-[min(5.5vw,2rem)] leading-none ${isWrong ? 'animate-shake' : ''}`}
         >
           {value}
         </motion.span>
       ) : notes ? (
-        <div className="grid grid-cols-3 grid-rows-3 gap-px w-[85%] h-[85%] text-[min(2.2vw,0.7rem)] text-ink-400">
+        <div className="grid grid-cols-3 grid-rows-3 gap-px w-[85%] h-[85%] text-[min(2.2vw,0.7rem)] text-muted-c">
           {Array.from({ length: 9 }, (_, i) => (
             <div key={i} className="flex items-center justify-center">
               {notes & (1 << (i + 1)) ? i + 1 : ''}
@@ -66,8 +68,11 @@ function CellInner({ index, value, given, notes, selected, peer, sameDigit, conf
           ))}
         </div>
       ) : null}
+      {isRight && (
+        <span key={`ring-${value}`} className="burst-ring" />
+      )}
       {selected && (
-        <span className="pointer-events-none absolute inset-0 rounded-sm ring-2 ring-accent-glow/80" />
+        <span className="pointer-events-none absolute inset-0 rounded-sm" style={{ boxShadow: 'inset 0 0 0 2px var(--accent-glow)' }} />
       )}
     </button>
   );

@@ -85,6 +85,20 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     emoji: '⏱️',
     check: (s) => s.totalMsPlayed >= 60 * 60_000,
   },
+  {
+    id: 'combo_9',
+    title: 'In The Zone',
+    desc: 'Hit a 9× combo',
+    emoji: '🎯',
+    check: (s) => s.bestCombo >= 9,
+  },
+  {
+    id: 'score_5000',
+    title: 'Score Lord',
+    desc: 'Break 5,000 in one run',
+    emoji: '👑',
+    check: (s) => Math.max(s.bestScore.easy, s.bestScore.medium, s.bestScore.hard) >= 5000,
+  },
 ];
 
 export function evaluate(

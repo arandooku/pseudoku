@@ -23,16 +23,21 @@ export interface SaveState {
   startedAt: string;     // ISO
   completed: boolean;
   hintsUsed: number;
+  score: number;
+  combo: number;
+  bestCombo: number;
 }
 
 export interface Stats {
   solved: { easy: number; medium: number; hard: number };
   bestMs: { easy: number | null; medium: number | null; hard: number | null };
+  bestScore: { easy: number; medium: number; hard: number };
   streakDays: number;
   lastPlayedDate: string | null; // YYYY-MM-DD
   noMistakeRun: number;
   totalMsPlayed: number;
   hardWinsFlawless: number;
+  bestCombo: number;
 }
 
 export interface AchievementDef {
