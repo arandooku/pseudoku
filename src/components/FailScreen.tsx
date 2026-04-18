@@ -40,7 +40,7 @@ export default function FailScreen() {
         <div className="flex gap-3 mt-6">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => newGame(save.difficulty)}
+            onClick={() => newGame(save.grade)}
             className="btn-press flex-1 py-3 rounded-xl text-white font-medium flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-glow))' }}
           >

@@ -1,3 +1,8 @@
+import type { Grade } from './solver/types';
+
+export { GRADE_LABEL, GRADE_ORDER } from './solver/types';
+export type { Grade, StrategyId } from './solver/types';
+
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type Grid = number[]; // length 81, 0 = empty
@@ -5,22 +10,24 @@ export type Grid = number[]; // length 81, 0 = empty
 export interface PuzzleData {
   puzzle: Grid;
   solution: Grid;
-  given: boolean[]; // true if cell was pre-filled (uneditable)
+  given: boolean[];
   seed: number;
   difficulty: Difficulty;
+  grade: Grade;
 }
 
 export interface SaveState {
   puzzle: Grid;
   solution: Grid;
   given: boolean[];
-  user: Grid;            // current user entries (0 if empty)
-  notes: number[];       // bitmask per cell, bit n = pencil n+1
+  user: Grid;
+  notes: number[];
   mistakes: number;
   elapsedMs: number;
   difficulty: Difficulty;
+  grade: Grade;
   seed: number;
-  startedAt: string;     // ISO
+  startedAt: string;
   completed: boolean;
   hintsUsed: number;
   score: number;
@@ -68,4 +75,19 @@ export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   easy: 'Zen',
   medium: 'Flow',
   hard: 'Crucible',
+};
+
+export function gradeToDifficulty(g: Grade): Difficulty {
+  if (g === 'kids' || g === 'gentle') return 'easy';
+  if (g === 'moderate' || g === 'tough') return 'medium';
+  return 'hard';
+}
+
+export const GRADE_MAX_MISTAKES: Record<Grade, number> = {
+  kids: Infinity,
+  gentle: Infinity,
+  moderate: 5,
+  tough: 4,
+  diabolical: 3,
+  extreme: 3,
 };

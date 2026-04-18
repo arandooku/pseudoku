@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Pencil, Eraser, Lightbulb, Volume2, VolumeX, Home as HomeIcon } from 'lucide-react';
+import { Pencil, Eraser, Lightbulb, Volume2, VolumeX, Home as HomeIcon, Wand2 } from 'lucide-react';
 import { useGame } from '../store/game';
 
 export default function Keypad() {
@@ -10,6 +10,7 @@ export default function Keypad() {
   const toggleNote = useGame((s) => s.toggleNote);
   const noteMode = useGame((s) => s.noteMode);
   const hint = useGame((s) => s.hint);
+  const autoPencil = useGame((s) => s.autoPencil);
   const muted = useGame((s) => s.muted);
   const toggleMute = useGame((s) => s.toggleMute);
   const setScreen = useGame((s) => s.setScreen);
@@ -36,8 +37,9 @@ export default function Keypad() {
 
   return (
     <div className="flex flex-col gap-2 px-1 pb-2">
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-6 gap-1.5">
         <ActionBtn onClick={() => toggleNote()} active={noteMode} icon={<Pencil size={16} />} label="Notes" sub={noteMode ? 'on' : 'off'} />
+        <ActionBtn onClick={autoPencil} icon={<Wand2 size={16} />} label="Auto" sub="pencil" />
         <ActionBtn onClick={clearCell} icon={<Eraser size={16} />} label="Erase" />
         <ActionBtn onClick={hint} icon={<Lightbulb size={16} />} label="Hint" sub={`used ${save.hintsUsed}`} />
         <ActionBtn onClick={toggleMute} icon={muted ? <VolumeX size={16} /> : <Volume2 size={16} />} label={muted ? 'Muted' : 'Sound'} />

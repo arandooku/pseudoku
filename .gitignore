@@ -6,4 +6,5 @@ dist-ssr
 .env
 .env.local
 .vscode
+.claude/
 Sudoku_Creation_and_Grading.pdf

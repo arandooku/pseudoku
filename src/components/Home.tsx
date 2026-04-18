@@ -1,16 +1,26 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Play, Trophy, Flame, Award, Leaf, Waves, Swords, Trash2, ChevronRight, Sparkles } from 'lucide-react';
+import { Play, Trophy, Flame, Award, Leaf, Waves, Swords, Trash2, ChevronRight, Sparkles, Baby, Flame as FlameIcon, Skull } from 'lucide-react';
 import { useGame } from '../store/game';
 import { ACHIEVEMENTS } from '../lib/achievements';
-import type { Difficulty } from '../lib/types';
-import { DIFFICULTY_LABEL, DIFFICULTY_MAX_MISTAKES } from '../lib/types';
+import type { Grade } from '../lib/types';
+import { GRADE_LABEL, GRADE_MAX_MISTAKES, gradeToDifficulty } from '../lib/types';
 import ThemeSwitcher from './ThemeSwitcher';
 
-const DIFFS: { id: Difficulty; sub: string; accent: string; Icon: typeof Leaf }[] = [
-  { id: 'easy', sub: 'unlimited mistakes · chill solve', accent: 'from-emerald-400/80 to-teal-500/70', Icon: Leaf },
-  { id: 'medium', sub: '5 mistakes · steady pace', accent: 'from-violet-400/80 to-fuchsia-500/70', Icon: Waves },
-  { id: 'hard', sub: '3 mistakes · high stakes', accent: 'from-rose-400/80 to-orange-500/70', Icon: Swords },
+interface GradeTile {
+  id: Grade;
+  sub: string;
+  accent: string;
+  Icon: typeof Leaf;
+}
+
+const GRADES: GradeTile[] = [
+  { id: 'kids',       sub: 'eyeballing only · playful intro',            accent: 'from-lime-300/80 to-emerald-400/70',   Icon: Baby },
+  { id: 'gentle',     sub: 'slice & dice · calm start',                  accent: 'from-emerald-400/80 to-teal-500/70',   Icon: Leaf },
+  { id: 'moderate',   sub: 'pairs & triples · steady logic',             accent: 'from-sky-400/80 to-blue-500/70',       Icon: Waves },
+  { id: 'tough',      sub: 'intersections, X-wings · brain flex',        accent: 'from-violet-400/80 to-fuchsia-500/70', Icon: Swords },
+  { id: 'diabolical', sub: 'chains, unique rectangles · fire required',  accent: 'from-rose-400/80 to-orange-500/70',    Icon: FlameIcon },
+  { id: 'extreme',    sub: 'rare beasts · logic on the edge',            accent: 'from-fuchsia-500/80 to-red-600/70',    Icon: Skull },
 ];
 
 function fmt(ms: number | null) {
@@ -31,6 +41,7 @@ export default function Home() {
 
   const canResume = save && !save.completed;
   const totalSolved = stats.solved.easy + stats.solved.medium + stats.solved.hard;
+  const resumeGradeLabel = save ? GRADE_LABEL[save.grade] : '';
 
   return (
     <motion.div
@@ -67,7 +78,7 @@ export default function Home() {
             </span>
             <span className="text-xs text-muted-c digit">{fmt(save!.elapsedMs)}</span>
           </div>
-          <div className="mt-1 font-display text-2xl">{DIFFICULTY_LABEL[save!.difficulty]}</div>
+          <div className="mt-1 font-display text-2xl">{resumeGradeLabel}</div>
           <div className="text-xs text-muted-c mt-1">
             {save!.user.filter((v, i) => v !== 0 && !save!.given[i]).length} placed · {save!.mistakes} mistakes
           </div>
@@ -75,41 +86,41 @@ export default function Home() {
         </motion.button>
       )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-xs uppercase tracking-[0.25em] text-muted-c">Start fresh</h2>
-        {DIFFS.map((d, idx) => {
-          const Icon = d.Icon;
+      <section className="flex flex-col gap-2.5">
+        <h2 className="text-xs uppercase tracking-[0.25em] text-muted-c">Choose a grade</h2>
+        {GRADES.map((g, idx) => {
+          const Icon = g.Icon;
+          const diff = gradeToDifficulty(g.id);
+          const maxMistakes = GRADE_MAX_MISTAKES[g.id];
           return (
             <motion.button
-              key={d.id}
-              onClick={() => newGame(d.id)}
+              key={g.id}
+              onClick={() => newGame(g.id)}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 + idx * 0.07 }}
+              transition={{ delay: 0.05 + idx * 0.05 }}
               whileTap={{ scale: 0.97 }}
               whileHover={{ y: -2 }}
-              className="relative overflow-hidden rounded-2xl p-5 text-left glass btn-press group"
+              className="relative overflow-hidden rounded-2xl p-4 text-left glass btn-press group"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${d.accent} opacity-15 group-hover:opacity-25 transition-opacity`} />
-              <div className="relative flex items-center gap-4">
-                <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-black/20 flex items-center justify-center">
-                  <Icon size={24} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${g.accent} opacity-15 group-hover:opacity-25 transition-opacity`} />
+              <div className="relative flex items-center gap-3">
+                <div className="flex-shrink-0 h-11 w-11 rounded-xl bg-black/20 flex items-center justify-center">
+                  <Icon size={22} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-display text-2xl">{DIFFICULTY_LABEL[d.id]}</span>
+                    <span className="font-display text-xl">{GRADE_LABEL[g.id]}</span>
                     <span className="text-xs text-muted-c digit">
-                      best {fmt(stats.bestMs[d.id])}
+                      best {fmt(stats.bestMs[diff])}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-c mt-0.5">{d.sub}</p>
-                  <div className="mt-1.5 text-[11px] uppercase tracking-widest text-muted-c">
-                    {DIFFICULTY_MAX_MISTAKES[d.id] === Infinity
-                      ? '∞ lives'
-                      : `${DIFFICULTY_MAX_MISTAKES[d.id]} lives`} · {stats.solved[d.id]} solved
+                  <p className="text-[12px] text-muted-c mt-0.5 truncate">{g.sub}</p>
+                  <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-c">
+                    {maxMistakes === Infinity ? '∞ lives' : `${maxMistakes} lives`}
                   </div>
                 </div>
-                <ChevronRight size={18} className="flex-shrink-0 opacity-40 group-hover:opacity-80 transition" />
+                <ChevronRight size={16} className="flex-shrink-0 opacity-40 group-hover:opacity-80 transition" />
               </div>
             </motion.button>
           );

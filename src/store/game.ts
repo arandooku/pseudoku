@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { generate, findConflicts, isComplete, candidates as calcCandidates } from '../lib/sudoku';
 import { evaluate } from '../lib/achievements';
-import type { Difficulty, SaveState, Stats } from '../lib/types';
-import { DIFFICULTY_MAX_MISTAKES } from '../lib/types';
+import type { Difficulty, Grade, SaveState, Stats } from '../lib/types';
+import { GRADE_MAX_MISTAKES, gradeToDifficulty } from '../lib/types';
+import { solve } from '../lib/solver/solver';
+import { STRATEGY_META } from '../lib/solver/types';
 import { sfx, setMuted } from '../lib/sound';
 import { haptic } from '../lib/haptic';
 
@@ -44,8 +46,9 @@ interface GameStore {
   lastUnlock: string | null;
   muted: boolean;
   fx: FxEvent[];
+  hintMessage: string | null;
 
-  newGame: (difficulty: Difficulty) => void;
+  newGame: (grade: Grade) => void;
   resume: () => boolean;
   setScreen: (s: Screen) => void;
   selectCell: (i: number | null) => void;
@@ -53,8 +56,10 @@ interface GameStore {
   clearCell: () => void;
   toggleNote: () => void;
   hint: () => void;
+  autoPencil: () => void;
   tick: (deltaMs: number) => void;
   dismissToast: () => void;
+  dismissHint: () => void;
   toggleMute: () => void;
   purgeAll: () => void;
   consumeFx: (id: number) => void;
@@ -96,9 +101,22 @@ function isValidSave(v: unknown): v is SaveState {
   );
 }
 
+const VALID_GRADES: Grade[] = ['kids', 'gentle', 'moderate', 'tough', 'diabolical', 'extreme'];
+
+function difficultyToGrade(d: Difficulty): Grade {
+  if (d === 'easy') return 'gentle';
+  if (d === 'medium') return 'tough';
+  return 'diabolical';
+}
+
 function migrateSave(s: SaveState): SaveState {
+  const rawGrade = (s as unknown as { grade: unknown }).grade;
+  const grade: Grade = typeof rawGrade === 'string' && (VALID_GRADES as string[]).includes(rawGrade)
+    ? (rawGrade as Grade)
+    : difficultyToGrade(s.difficulty);
   return {
     ...s,
+    grade,
     score: typeof (s as unknown as { score: unknown }).score === 'number' ? s.score : 0,
     combo: typeof (s as unknown as { combo: unknown }).combo === 'number' ? s.combo : 0,
     bestCombo: typeof (s as unknown as { bestCombo: unknown }).bestCombo === 'number' ? s.bestCombo : 0,
@@ -187,9 +205,11 @@ export const useGame = create<GameStore>((set, get) => ({
   lastUnlock: null,
   muted: false,
   fx: [],
+  hintMessage: null,
 
-  newGame: (difficulty) => {
-    const { puzzle, solution, given, seed } = generate(difficulty);
+  newGame: (grade) => {
+    const { puzzle, solution, given, seed } = generate(grade);
+    const difficulty = gradeToDifficulty(grade);
     const save: SaveState = {
       puzzle,
       solution,
@@ -199,6 +219,7 @@ export const useGame = create<GameStore>((set, get) => ({
       mistakes: 0,
       elapsedMs: 0,
       difficulty,
+      grade,
       seed,
       startedAt: new Date().toISOString(),
       completed: false,
@@ -208,7 +229,7 @@ export const useGame = create<GameStore>((set, get) => ({
       bestCombo: 0,
     };
     writeSave(save);
-    set({ save, screen: 'play', selectedCell: null, noteMode: false, failed: false, fx: [] });
+    set({ save, screen: 'play', selectedCell: null, noteMode: false, failed: false, fx: [], hintMessage: null });
   },
 
   consumeFx: (id) => set((st) => ({ fx: st.fx.filter((e) => e.id !== id) })),
@@ -320,7 +341,7 @@ export const useGame = create<GameStore>((set, get) => ({
       bestCombo,
     };
 
-    const maxMistakes = DIFFICULTY_MAX_MISTAKES[save.difficulty];
+    const maxMistakes = GRADE_MAX_MISTAKES[save.grade];
     const failed = nextSave.mistakes >= maxMistakes;
 
     if (isComplete(user, save.solution)) {
@@ -386,24 +407,85 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   hint: () => {
-    const { save, selectedCell } = get();
+    const { save } = get();
     if (!save || save.completed) return;
-    let target = selectedCell;
-    if (target === null || save.given[target] || save.user[target] === save.solution[target]) {
-      for (let i = 0; i < 81; i++) {
-        if (!save.given[i] && save.user[i] !== save.solution[i]) { target = i; break; }
+
+    // Build a working grid from current user entries, but only where the user entry
+    // matches the solution (so solver doesn't get stuck on user's wrong guesses).
+    const working = save.puzzle.slice();
+    for (let i = 0; i < 81; i++) {
+      if (!save.given[i] && save.user[i] !== 0 && save.user[i] === save.solution[i]) {
+        working[i] = save.user[i];
       }
     }
+
+    const trace = solve(working);
+    const firstSolve = trace.steps.find((step) => step.solved.length > 0);
+
+    let target: number | null = null;
+    let digit = 0;
+    let strategyLabel = '';
+
+    if (firstSolve) {
+      target = firstSolve.solved[0].cell;
+      digit = firstSolve.solved[0].digit;
+      strategyLabel = STRATEGY_META[firstSolve.strategy].label;
+    } else {
+      // Fallback: solver couldn't deduce more — find any mistake and reveal solution.
+      for (let i = 0; i < 81; i++) {
+        if (!save.given[i] && save.user[i] !== save.solution[i]) {
+          target = i;
+          digit = save.solution[i];
+          strategyLabel = 'Reveal';
+          break;
+        }
+      }
+    }
+
     if (target === null) return;
+
     const user = save.user.slice();
-    user[target] = save.solution[target];
+    user[target] = digit;
+    const notes = save.notes.slice();
+    notes[target] = 0;
+    const r = Math.floor(target / 9), c = target % 9;
+    const mask = ~(1 << digit);
+    for (let k = 0; k < 9; k++) { notes[r * 9 + k] &= mask; notes[k * 9 + c] &= mask; }
+    const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+    for (let rr = br; rr < br + 3; rr++) for (let cc = bc; cc < bc + 3; cc++) notes[rr * 9 + cc] &= mask;
+
     const given = save.given.slice();
     given[target] = true;
-    const ns = { ...save, user, given, hintsUsed: save.hintsUsed + 1 };
+    const ns: SaveState = { ...save, user, notes, given, hintsUsed: save.hintsUsed + 1 };
     writeSave(ns);
-    set({ save: ns, selectedCell: target });
+    const row = Math.floor(target / 9) + 1;
+    const col = (target % 9) + 1;
+    set({
+      save: ns,
+      selectedCell: target,
+      hintMessage: `${strategyLabel} · R${row}C${col} = ${digit}`,
+    });
     sfx.correct(); haptic.soft();
   },
+
+  autoPencil: () => {
+    const { save } = get();
+    if (!save || save.completed) return;
+    const notes = new Array(81).fill(0);
+    for (let i = 0; i < 81; i++) {
+      if (save.given[i] || save.user[i] !== 0) continue;
+      const cands = calcCandidates(save.user, i);
+      let mask = 0;
+      for (const d of cands) mask |= 1 << d;
+      notes[i] = mask;
+    }
+    const ns: SaveState = { ...save, notes };
+    writeSave(ns);
+    set({ save: ns });
+    sfx.tap(); haptic.soft();
+  },
+
+  dismissHint: () => set({ hintMessage: null }),
 
   tick: (delta) => {
     const st = get();
