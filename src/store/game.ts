@@ -224,12 +224,14 @@ export const useGame = create<GameStore>((set, get) => ({
   newGame: (grade) => {
     const { puzzle, solution, given, seed } = generate(grade);
     const difficulty = gradeToDifficulty(grade);
+    const autoOn = get().autoPencilOn;
+    const initialNotes = autoOn ? computeAutoNotes(puzzle, given) : new Array(81).fill(0);
     const save: SaveState = {
       puzzle,
       solution,
       given,
       user: puzzle.slice(),
-      notes: new Array(81).fill(0),
+      notes: initialNotes,
       mistakes: 0,
       elapsedMs: 0,
       difficulty,
@@ -251,7 +253,7 @@ export const useGame = create<GameStore>((set, get) => ({
   resume: () => {
     const s = loadSave();
     if (!s || s.completed) return false;
-    set({ save: s, screen: 'play', selectedCell: null, failed: false });
+    set({ save: s, screen: 'play', selectedCell: null, failed: false, fx: [], hintMessage: null });
     return true;
   },
 
@@ -538,6 +540,9 @@ export const useGame = create<GameStore>((set, get) => ({
       failed: false,
       lastUnlock: null,
       screen: 'home',
+      fx: [],
+      hintMessage: null,
+      autoPencilOn: false,
     });
   },
 }));
