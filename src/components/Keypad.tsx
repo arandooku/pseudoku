@@ -11,6 +11,7 @@ export default function Keypad() {
   const noteMode = useGame((s) => s.noteMode);
   const hint = useGame((s) => s.hint);
   const autoPencil = useGame((s) => s.autoPencil);
+  const autoPencilOn = useGame((s) => s.autoPencilOn);
   const muted = useGame((s) => s.muted);
   const toggleMute = useGame((s) => s.toggleMute);
   const setScreen = useGame((s) => s.setScreen);
@@ -39,7 +40,7 @@ export default function Keypad() {
     <div className="flex flex-col gap-2 px-1 pb-2">
       <div className="grid grid-cols-6 gap-1.5">
         <ActionBtn onClick={() => toggleNote()} active={noteMode} icon={<Pencil size={16} />} label="Notes" sub={noteMode ? 'on' : 'off'} />
-        <ActionBtn onClick={autoPencil} icon={<Wand2 size={16} />} label="Auto" sub="pencil" />
+        <ActionBtn onClick={autoPencil} active={autoPencilOn} icon={<Wand2 size={16} />} label="Auto" sub={autoPencilOn ? 'on' : 'off'} />
         <ActionBtn onClick={clearCell} icon={<Eraser size={16} />} label="Erase" />
         <ActionBtn onClick={hint} icon={<Lightbulb size={16} />} label="Hint" sub={`used ${save.hintsUsed}`} />
         <ActionBtn onClick={toggleMute} icon={muted ? <VolumeX size={16} /> : <Volume2 size={16} />} label={muted ? 'Muted' : 'Sound'} />

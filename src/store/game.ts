@@ -47,6 +47,7 @@ interface GameStore {
   muted: boolean;
   fx: FxEvent[];
   hintMessage: string | null;
+  autoPencilOn: boolean;
 
   newGame: (grade: Grade) => void;
   resume: () => boolean;
@@ -68,6 +69,18 @@ interface GameStore {
 let fxCounter = 0;
 function emitFx(existing: FxEvent[], ev: Omit<FxEvent, 'id'>): FxEvent[] {
   return [...existing, { ...ev, id: ++fxCounter }];
+}
+
+function computeAutoNotes(user: number[], given: boolean[]): number[] {
+  const notes = new Array(81).fill(0);
+  for (let i = 0; i < 81; i++) {
+    if (given[i] || user[i] !== 0) continue;
+    const cands = calcCandidates(user, i);
+    let mask = 0;
+    for (const d of cands) mask |= 1 << d;
+    notes[i] = mask;
+  }
+  return notes;
 }
 
 function todayISO(): string {
@@ -206,6 +219,7 @@ export const useGame = create<GameStore>((set, get) => ({
   muted: false,
   fx: [],
   hintMessage: null,
+  autoPencilOn: false,
 
   newGame: (grade) => {
     const { puzzle, solution, given, seed } = generate(grade);
@@ -255,7 +269,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   placeDigit: (d) => {
     const st = get();
-    const { save, selectedCell, noteMode } = st;
+    const { save, selectedCell, noteMode, autoPencilOn } = st;
     if (!save || selectedCell === null || save.completed || st.failed) return;
     if (save.given[selectedCell]) return;
 
@@ -331,10 +345,11 @@ export const useGame = create<GameStore>((set, get) => ({
       score += bonus;
     }
 
+    const finalNotes = autoPencilOn ? computeAutoNotes(user, save.given) : notes;
     const nextSave: SaveState = {
       ...save,
       user,
-      notes,
+      notes: finalNotes,
       mistakes: save.mistakes + (correct ? 0 : 1),
       score,
       combo,
@@ -394,20 +409,21 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   clearCell: () => {
-    const { save, selectedCell } = get();
+    const { save, selectedCell, autoPencilOn } = get();
     if (!save || selectedCell === null || save.given[selectedCell]) return;
     const user = save.user.slice();
     const notes = save.notes.slice();
     user[selectedCell] = 0;
     notes[selectedCell] = 0;
-    const ns = { ...save, user, notes };
+    const finalNotes = autoPencilOn ? computeAutoNotes(user, save.given) : notes;
+    const ns = { ...save, user, notes: finalNotes };
     writeSave(ns);
     set({ save: ns });
     sfx.tap();
   },
 
   hint: () => {
-    const { save, hintMessage } = get();
+    const { save, hintMessage, autoPencilOn } = get();
     if (!save || save.completed) return;
     if (hintMessage) return;
 
@@ -457,7 +473,8 @@ export const useGame = create<GameStore>((set, get) => ({
 
     const given = save.given.slice();
     given[target] = true;
-    const ns: SaveState = { ...save, user, notes, given, hintsUsed: save.hintsUsed + 1 };
+    const finalNotes = autoPencilOn ? computeAutoNotes(user, given) : notes;
+    const ns: SaveState = { ...save, user, notes: finalNotes, given, hintsUsed: save.hintsUsed + 1 };
     writeSave(ns);
     const row = Math.floor(target / 9) + 1;
     const col = (target % 9) + 1;
@@ -470,19 +487,22 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   autoPencil: () => {
-    const { save } = get();
-    if (!save || save.completed) return;
-    const notes = new Array(81).fill(0);
-    for (let i = 0; i < 81; i++) {
-      if (save.given[i] || save.user[i] !== 0) continue;
-      const cands = calcCandidates(save.user, i);
-      let mask = 0;
-      for (const d of cands) mask |= 1 << d;
-      notes[i] = mask;
+    const { save, autoPencilOn } = get();
+    if (!save || save.completed) {
+      set({ autoPencilOn: !autoPencilOn });
+      sfx.tap(); haptic.soft();
+      return;
     }
+    const nextOn = !autoPencilOn;
+    if (!nextOn) {
+      set({ autoPencilOn: false });
+      sfx.tap(); haptic.soft();
+      return;
+    }
+    const notes = computeAutoNotes(save.user, save.given);
     const ns: SaveState = { ...save, notes };
     writeSave(ns);
-    set({ save: ns });
+    set({ save: ns, autoPencilOn: true });
     sfx.tap(); haptic.soft();
   },
 
