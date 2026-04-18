@@ -255,7 +255,10 @@ export const useGame = create<GameStore>((set, get) => ({
     return true;
   },
 
-  setScreen: (screen) => set({ screen }),
+  setScreen: (screen) => {
+    if (screen === 'play') { set({ screen }); return; }
+    set({ screen, failed: false, selectedCell: null, hintMessage: null });
+  },
 
   selectCell: (i) => { sfx.tap(); haptic.tap(); set({ selectedCell: i }); },
 
@@ -284,6 +287,8 @@ export const useGame = create<GameStore>((set, get) => ({
       sfx.tap(); haptic.tap();
       return;
     }
+
+    if (save.user[selectedCell] === d) { sfx.tap(); return; }
 
     const user = save.user.slice();
     user[selectedCell] = d;
