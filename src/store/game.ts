@@ -407,8 +407,9 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   hint: () => {
-    const { save } = get();
+    const { save, hintMessage } = get();
     if (!save || save.completed) return;
+    if (hintMessage) return;
 
     // Build a working grid from current user entries, but only where the user entry
     // matches the solution (so solver doesn't get stuck on user's wrong guesses).

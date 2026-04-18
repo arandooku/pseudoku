@@ -55,13 +55,13 @@ export default function Keypad() {
               whileHover={done ? {} : { scale: 1.05, y: -2 }}
               onClick={() => placeDigit(d)}
               disabled={done}
-              className={`relative aspect-[3/4] rounded-xl glass btn-press flex flex-col items-center justify-center digit text-2xl ${
+              className={`relative aspect-[3/4] rounded-xl glass btn-press flex flex-col items-center justify-center font-sans font-semibold text-2xl tabular-nums ${
                 done ? 'opacity-30' : ''
               } ${noteMode ? 'ring-1 ring-accent-c' : ''}`}
               style={noteMode ? { boxShadow: '0 0 0 1px var(--accent)' } : undefined}
             >
               <span>{d}</span>
-              <span className="absolute bottom-1 text-[10px] text-muted-c digit">{9 - counts[d]}</span>
+              <span className="absolute bottom-1 text-[10px] font-normal text-muted-c tabular-nums">{9 - counts[d]}</span>
               {done && <span className="absolute inset-0 rounded-xl bg-[var(--accent)]/20 pointer-events-none" />}
             </motion.button>
           );
