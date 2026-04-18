@@ -62,7 +62,6 @@ export default function Keypad() {
               style={noteMode ? { boxShadow: '0 0 0 1px var(--accent)' } : undefined}
             >
               <span>{d}</span>
-              <span className="absolute bottom-1 text-[10px] font-normal text-muted-c tabular-nums">{9 - counts[d]}</span>
               {done && <span className="absolute inset-0 rounded-xl bg-[var(--accent)]/20 pointer-events-none" />}
             </motion.button>
           );
