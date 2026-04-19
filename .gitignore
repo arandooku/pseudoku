@@ -8,3 +8,5 @@ dist-ssr
 .vscode
 .claude/
 Sudoku_Creation_and_Grading.pdf
+
+.vercel
