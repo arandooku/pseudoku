@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { Analytics } from '@vercel/analytics/react';
 import { useGame } from './store/game';
 import Home from './components/Home';
 import Board from './components/Board';
@@ -60,6 +61,7 @@ export default function App() {
 
       <FX />
       <AchievementToast />
+      <Analytics />
     </main>
   );
 }
