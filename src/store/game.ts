@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { generate, findConflicts, isComplete, candidates as calcCandidates } from '../lib/sudoku';
-import { evaluate } from '../lib/achievements';
+import { evaluate, ACHIEVEMENTS } from '../lib/achievements';
 import type { Difficulty, Grade, SaveState, Stats } from '../lib/types';
 import { GRADE_MAX_MISTAKES, gradeToDifficulty } from '../lib/types';
 import { solve } from '../lib/solver/solver';
@@ -94,20 +94,32 @@ function daysDiff(a: string, b: string): number {
   return Math.round((db - da) / 86_400_000);
 }
 
+function isDigitGrid(a: unknown): a is number[] {
+  return Array.isArray(a) && a.length === 81 &&
+    a.every(n => Number.isInteger(n) && n >= 0 && n <= 9);
+}
+function isBoolGrid(a: unknown): a is boolean[] {
+  return Array.isArray(a) && a.length === 81 && a.every(b => typeof b === 'boolean');
+}
+function isNotesGrid(a: unknown): a is number[] {
+  return Array.isArray(a) && a.length === 81 &&
+    a.every(n => Number.isInteger(n) && n >= 0 && n <= 0x1ff);
+}
+
 function isValidSave(v: unknown): v is SaveState {
   if (!v || typeof v !== 'object') return false;
   const s = v as Record<string, unknown>;
   const diffs = ['easy', 'medium', 'hard'];
   return (
-    Array.isArray(s.puzzle) && s.puzzle.length === 81 &&
-    Array.isArray(s.solution) && s.solution.length === 81 &&
-    Array.isArray(s.given) && s.given.length === 81 &&
-    Array.isArray(s.user) && s.user.length === 81 &&
-    Array.isArray(s.notes) && s.notes.length === 81 &&
+    isDigitGrid(s.puzzle) &&
+    isDigitGrid(s.solution) &&
+    isBoolGrid(s.given) &&
+    isDigitGrid(s.user) &&
+    isNotesGrid(s.notes) &&
     typeof s.mistakes === 'number' && Number.isFinite(s.mistakes) &&
     typeof s.elapsedMs === 'number' && Number.isFinite(s.elapsedMs) &&
     typeof s.difficulty === 'string' && diffs.includes(s.difficulty) &&
-    typeof s.seed === 'number' &&
+    typeof s.seed === 'number' && Number.isFinite(s.seed) &&
     typeof s.startedAt === 'string' &&
     typeof s.completed === 'boolean' &&
     typeof s.hintsUsed === 'number' && Number.isFinite(s.hintsUsed)
@@ -200,7 +212,11 @@ function loadUnlocked(): string[] {
     const raw = localStorage.getItem(ACH_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.unlocked) ? parsed.unlocked : [];
+    if (!Array.isArray(parsed?.unlocked)) return [];
+    const validIds = new Set(ACHIEVEMENTS.map(a => a.id));
+    return parsed.unlocked.filter(
+      (id: unknown): id is string => typeof id === 'string' && validIds.has(id)
+    );
   } catch { return []; }
 }
 function writeUnlocked(u: string[]) {
