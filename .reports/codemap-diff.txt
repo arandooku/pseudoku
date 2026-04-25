@@ -1,0 +1,48 @@
+codemap diff — 2026-04-25
+==========================
+
+Status: INITIAL GENERATION (no prior codemaps detected)
+
+Files scanned
+-------------
+src/main.tsx
+src/App.tsx
+src/store/game.ts                (575 lines — largest module)
+src/lib/types.ts
+src/lib/sudoku.ts                (381)
+src/lib/grader.ts                (176)
+src/lib/achievements.ts          (115)
+src/lib/theme.ts                 (126)
+src/lib/sound.ts                 (102)
+src/lib/haptic.ts                (6)
+src/lib/rng.ts                   (25)
+src/lib/solver/index.ts
+src/lib/solver/types.ts
+src/lib/solver/solver.ts
+src/lib/solver/candidates.ts
+src/lib/solver/strategies.ts     (686 — most complex)
+src/components/* (12 files)
+index.html, vercel.json, package.json, vite.config.ts
+
+Generated
+---------
+docs/CODEMAPS/architecture.md
+docs/CODEMAPS/backend.md          (N/A — client-only)
+docs/CODEMAPS/frontend.md
+docs/CODEMAPS/data.md
+docs/CODEMAPS/dependencies.md
+
+Architecture notes
+------------------
+- Pure SPA. No server, no DB. Persistence = 5 localStorage keys.
+- Single zustand store (`useGame`) is the orchestrator.
+- 15 solver strategies grade puzzles (kids → extreme).
+- Vercel host with strict CSP, root deploy (no base path).
+
+Staleness warnings
+------------------
+None — first generation.
+
+Suggested next refresh
+----------------------
+After: solver strategy additions, new screens/routes, backend/API introduction, or store schema changes.
