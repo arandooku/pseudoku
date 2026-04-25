@@ -48,9 +48,9 @@ export default function Home() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col flex-1 px-4 py-3 gap-3 overflow-hidden"
+      className="flex flex-col flex-1 min-h-0 px-4 py-3 gap-3 overflow-y-auto"
     >
-      <header className="flex items-end justify-between gap-2">
+      <header className="flex items-end justify-between gap-2 flex-shrink-0">
         <div className="flex flex-col items-start">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-accent-glow-c">
             <Sparkles size={10} /> daily logic
@@ -59,12 +59,12 @@ export default function Home() {
             initial={{ opacity: 0, letterSpacing: '0.4em' }}
             animate={{ opacity: 1, letterSpacing: '-0.02em' }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display text-4xl font-semibold leading-none"
+            className="font-display text-4xl sm:text-5xl font-semibold leading-none"
           >
             Pseud<span className="text-accent-c">ō</span>ku
           </motion.h1>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-muted-c">
+        <div className="flex items-center gap-2 text-[10px] text-muted-c flex-shrink-0">
           <span className="flex items-center gap-1"><Trophy size={11} />{totalSolved}</span>
           <span className="flex items-center gap-1"><Flame size={11} />{stats.streakDays}d</span>
           <span className="flex items-center gap-1"><Award size={11} />{unlocked.length}/{ACHIEVEMENTS.length}</span>
@@ -75,23 +75,29 @@ export default function Home() {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={resume}
-          className="btn-press relative overflow-hidden glass rounded-xl px-3 py-2 text-left halo-pulse flex items-center justify-between"
+          className="btn-press relative overflow-hidden glass rounded-2xl px-4 py-3 text-left halo-pulse flex items-center justify-between flex-shrink-0"
+          style={{ minHeight: '64px' }}
         >
-          <div className="flex items-center gap-2">
-            <Play size={14} fill="currentColor" className="text-accent-glow-c" />
+          <div className="flex items-center gap-3">
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-glow))', boxShadow: '0 0 16px rgba(139,92,246,0.4)' }}
+            >
+              <Play size={16} fill="currentColor" className="text-white ml-0.5" />
+            </div>
             <div>
               <div className="text-[9px] uppercase tracking-widest text-accent-glow-c">Continue</div>
-              <div className="font-display text-lg leading-none">{resumeGradeLabel}</div>
+              <div className="font-display text-xl leading-tight">{resumeGradeLabel}</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-muted-c tabular-nums">{fmt(save!.elapsedMs)}</div>
+            <div className="digit text-base text-white tabular-nums">{fmt(save!.elapsedMs)}</div>
             <div className="text-[10px] text-muted-c">{save!.mistakes}✕</div>
           </div>
         </motion.button>
       )}
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 flex-shrink-0">
         {GRADES.map((g, idx) => {
           const Icon = g.Icon;
           const diff = gradeToDifficulty(g.id);
@@ -103,16 +109,16 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.04 + idx * 0.04 }}
               whileTap={{ scale: 0.96 }}
-              whileHover={{ y: -2 }}
-              className="relative overflow-hidden rounded-xl px-3 py-2.5 text-left glass btn-press group"
+              className="relative overflow-hidden rounded-2xl px-3 py-3 text-left glass btn-press group"
+              style={{ minHeight: '64px' }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${g.accent} opacity-15 group-hover:opacity-25 transition-opacity`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${g.accent} opacity-20 group-active:opacity-35 transition-opacity`} />
               <div className="relative flex items-center gap-2">
-                <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-black/20 flex items-center justify-center">
+                <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-black/25 flex items-center justify-center">
                   <Icon size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-display text-base leading-tight truncate">{GRADE_LABEL[g.id]}</div>
+                  <div className="font-display text-[15px] sm:text-lg leading-tight truncate">{GRADE_LABEL[g.id]}</div>
                   <div className="text-[10px] text-muted-c tabular-nums">best {fmt(stats.bestMs[diff])}</div>
                 </div>
               </div>
@@ -123,25 +129,25 @@ export default function Home() {
 
       <ThemeSwitcher />
 
-      <div className="mt-auto flex items-center gap-2">
+      <div className="mt-auto flex items-center gap-2 flex-shrink-0 pt-1">
         <button
           onClick={() => setScreen('achievements')}
-          className="btn-press flex-1 glass rounded-lg py-2 text-[11px] uppercase tracking-widest flex items-center justify-center gap-1.5"
+          className="btn-press flex-1 glass rounded-xl py-3 text-[11px] uppercase tracking-widest flex items-center justify-center gap-1.5 tap-target"
         >
-          <Award size={12} /> Badges
+          <Award size={14} /> Badges
         </button>
         {confirmPurge ? (
           <>
             <button
               onClick={() => { purgeAll(); setConfirmPurge(false); }}
-              className="btn-press text-[11px] px-3 py-2 rounded-lg text-white uppercase tracking-widest"
+              className="btn-press text-[11px] px-4 py-3 rounded-xl text-white uppercase tracking-widest tap-target"
               style={{ background: 'var(--danger-c)' }}
             >
               Purge
             </button>
             <button
               onClick={() => setConfirmPurge(false)}
-              className="btn-press text-[11px] px-3 py-2 rounded-lg bg-black/30 uppercase tracking-widest"
+              className="btn-press text-[11px] px-4 py-3 rounded-xl bg-black/30 uppercase tracking-widest tap-target"
             >
               Cancel
             </button>
@@ -149,10 +155,10 @@ export default function Home() {
         ) : (
           <button
             onClick={() => setConfirmPurge(true)}
-            className="btn-press glass rounded-lg py-2 px-3 text-[11px] uppercase tracking-widest text-muted-c hover:text-red-400 transition flex items-center gap-1.5"
+            className="btn-press glass rounded-xl py-3 px-4 text-[11px] uppercase tracking-widest text-muted-c hover:text-red-400 transition flex items-center gap-1.5 tap-target"
             aria-label="Purge all data"
           >
-            <Trash2 size={12} />
+            <Trash2 size={14} />
           </button>
         )}
       </div>

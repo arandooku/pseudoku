@@ -39,37 +39,31 @@ export default function Hud() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between px-3 py-2 glass rounded-xl gap-3">
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-[0.25em] text-muted-c flex items-center gap-1">
-            <Zap size={10} /> {GRADE_LABEL[save.grade]}
+      <div className="grid grid-cols-3 items-center px-3 py-2 glass rounded-xl gap-2">
+        <div className="flex flex-col items-start min-w-0">
+          <span className="text-[9px] uppercase tracking-[0.25em] text-muted-c flex items-center gap-1 truncate">
+            <Zap size={10} className="flex-shrink-0" /> {GRADE_LABEL[save.grade]}
           </span>
-          <span className={`digit text-base ${pulse ? 'num-tick' : ''}`}>{score.toLocaleString()}</span>
-        </div>
-        <div
-          className={`hidden sm:flex px-2 py-1 rounded-full text-[10px] uppercase tracking-widest bg-gradient-to-r ${gradeInfo.color} text-white/95 font-semibold`}
-          title={gradeInfo.blurb}
-        >
-          {gradeInfo.label}
+          <span className={`digit text-base sm:text-lg ${pulse ? 'num-tick' : ''}`}>{score.toLocaleString()}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-[10px] uppercase tracking-[0.25em] text-muted-c flex items-center gap-1">
+          <span className="text-[9px] uppercase tracking-[0.25em] text-muted-c flex items-center gap-1">
             <Clock size={10} /> Time
           </span>
-          <span className="digit text-lg">{fmt(save.elapsedMs)}</span>
+          <span className="digit text-lg sm:text-xl tabular-nums">{fmt(save.elapsedMs)}</span>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-[10px] uppercase tracking-[0.25em] text-muted-c flex items-center gap-1">
+          <span className="text-[9px] uppercase tracking-[0.25em] text-muted-c flex items-center gap-1">
             <Heart size={10} /> Lives
           </span>
           {lives === null ? (
             <span className="text-lg leading-none opacity-70">∞</span>
           ) : (
-            <div className="flex gap-1 mt-0.5">
+            <div className="flex gap-0.5 sm:gap-1 mt-0.5">
               {Array.from({ length: max as number }).map((_, i) => (
                 <Heart
                   key={i}
-                  size={14}
+                  size={13}
                   className="transition-all"
                   fill={i < lives ? 'currentColor' : 'none'}
                   style={{ color: i < lives ? 'var(--danger-c)' : 'rgba(148,163,184,0.25)', filter: i < lives ? 'drop-shadow(0 0 6px var(--danger-c))' : 'none' }}

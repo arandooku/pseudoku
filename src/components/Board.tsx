@@ -20,9 +20,10 @@ export default function Board() {
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="relative aspect-square w-full mx-auto select-none"
+      className="relative aspect-square w-full mx-auto select-none board-fit"
+      style={{ maxWidth: 'min(100%, calc(100dvh - 230px))' }}
     >
-      <div className="absolute inset-0 rounded-2xl glass p-1.5" data-board>
+      <div className="absolute inset-0 rounded-2xl glass p-1 sm:p-1.5" data-board>
         <div className="grid grid-cols-9 grid-rows-9 gap-[1px] w-full h-full rounded-xl overflow-hidden" style={{ background: 'rgba(148,163,184,0.18)' }}>
           {Array.from({ length: 81 }, (_, i) => {
             const r = Math.floor(i / 9), c = i % 9;

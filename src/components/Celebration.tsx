@@ -35,18 +35,17 @@ export default function Celebration() {
   const newGame = useGame((s) => s.newGame);
   const setScreen = useGame((s) => s.setScreen);
 
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 140 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 0.6,
-        dur: 2.2 + Math.random() * 2.5,
-        color: COLORS[i % COLORS.length],
-        rot: Math.random() * 360,
-      })),
-    [],
-  );
+  const pieces = useMemo(() => {
+    const count = typeof window !== 'undefined' && window.innerWidth < 480 ? 60 : 140;
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 0.6,
+      dur: 2.2 + Math.random() * 2.5,
+      color: COLORS[i % COLORS.length],
+      rot: Math.random() * 360,
+    }));
+  }, []);
 
   const targetScore = save?.score ?? 0;
   const rampedScore = useRamp(targetScore);
@@ -61,8 +60,12 @@ export default function Celebration() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-40 flex items-center justify-center p-6 backdrop-blur-md"
-      style={{ background: 'var(--overlay-tint)' }}
+      className="fixed inset-0 z-40 flex items-center justify-center p-4 sm:p-6 backdrop-blur-md"
+      style={{
+        background: 'var(--overlay-tint)',
+        paddingTop: 'max(env(safe-area-inset-top), 16px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+      }}
     >
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {pieces.map((p) => (
@@ -84,7 +87,7 @@ export default function Celebration() {
         initial={{ scale: 0.7, y: 40, opacity: 0, rotate: -6 }}
         animate={{ scale: 1, y: 0, opacity: 1, rotate: 0 }}
         transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-        className="relative glass rounded-3xl p-8 w-full max-w-sm text-center halo-pulse"
+        className="relative glass rounded-3xl p-6 sm:p-8 w-full max-w-sm text-center halo-pulse"
       >
         <motion.div
           initial={{ scale: 0 }}
@@ -119,11 +122,11 @@ export default function Celebration() {
           <Stat icon={<Flame size={12} />} label="Streak" value={`${stats.streakDays}d`} />
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-2 sm:gap-3 mt-6">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => newGame(save.grade)}
-            className="btn-press flex-1 py-3 rounded-xl text-white font-medium flex items-center justify-center gap-2"
+            className="btn-press flex-1 py-3.5 rounded-xl text-white font-medium flex items-center justify-center gap-2 tap-target"
             style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-glow))', boxShadow: '0 4px 20px rgba(139,92,246,0.4)' }}
           >
             <RotateCcw size={16} /> Again
@@ -131,7 +134,7 @@ export default function Celebration() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setScreen('home')}
-            className="btn-press flex-1 py-3 rounded-xl bg-black/30 flex items-center justify-center gap-2"
+            className="btn-press flex-1 py-3.5 rounded-xl bg-black/30 flex items-center justify-center gap-2 tap-target"
           >
             <HomeIcon size={16} /> Home
           </motion.button>

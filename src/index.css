@@ -26,7 +26,10 @@ html, body, #root {
   overscroll-behavior: none;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
+html { overflow-x: hidden; }
 
 body {
   margin: 0;
@@ -35,12 +38,57 @@ body {
   background-attachment: fixed;
   color: var(--text-color);
   min-height: 100vh;
+  min-height: 100svh;
   min-height: 100dvh;
+  overflow-x: hidden;
   transition: background 500ms ease;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 * { -webkit-user-select: none; user-select: none; }
 input, textarea { -webkit-user-select: text; user-select: text; }
+
+/* min 44pt thumb target where possible */
+.tap-target { min-height: 44px; min-width: 44px; }
+
+/* lock board against accidental zoom */
+[data-board] { touch-action: none; }
+
+/* default play layout */
+.play-shell { max-width: 520px; }
+
+/* landscape phone: board left, keypad right; hud stays on top */
+@media (orientation: landscape) and (max-height: 540px) {
+  .play-shell { max-width: 920px; }
+  .play-main { flex-direction: row !important; align-items: stretch; }
+  .play-main > .play-board {
+    flex: 0 0 auto;
+    width: calc(100dvh - 110px);
+    max-width: 50%;
+    min-width: 0;
+  }
+  .play-main > :nth-child(2) { flex: 1 1 auto; max-width: 460px; align-self: center; min-width: 0; }
+  .board-fit {
+    max-width: 100% !important;
+    max-height: calc(100dvh - 110px);
+    width: 100% !important;
+  }
+}
+
+/* reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .aurora-blob, .floating-digit, .confetti-piece { display: none !important; }
+}
 
 .glass {
   background: rgba(var(--glass-rgb), 0.55);

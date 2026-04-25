@@ -26,7 +26,8 @@ export default function AchievementToast() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -80, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-          className="fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
+          className="fixed left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
+          style={{ top: 'max(env(safe-area-inset-top), 12px)' }}
         >
           <button
             onClick={dismiss}

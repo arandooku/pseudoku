@@ -55,12 +55,12 @@ function CellInner({ index, value, given, notes, selected, peer, sameDigit, conf
           animate={{ scale: 1, rotate: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 520, damping: 16 }}
           style={textStyle}
-          className={`digit text-[min(5.5vw,2rem)] leading-none ${isWrong ? 'animate-shake' : ''}`}
+          className={`digit text-[clamp(1.125rem,6.2vw,2rem)] leading-none ${isWrong ? 'animate-shake' : ''}`}
         >
           {value}
         </motion.span>
       ) : notes ? (
-        <div className="grid grid-cols-3 grid-rows-3 gap-px w-[85%] h-[85%] text-[min(2.2vw,0.7rem)] text-muted-c">
+        <div className="grid grid-cols-3 grid-rows-3 gap-px w-[92%] h-[92%] text-[clamp(0.5rem,2.5vw,0.7rem)] text-muted-c">
           {Array.from({ length: 9 }, (_, i) => (
             <div key={i} className="flex items-center justify-center">
               {notes & (1 << (i + 1)) ? i + 1 : ''}

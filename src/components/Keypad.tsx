@@ -37,31 +37,40 @@ export default function Keypad() {
   if (!save) return null;
 
   return (
-    <div className="flex flex-col gap-2 px-1 pb-2">
-      <div className="grid grid-cols-6 gap-1.5">
-        <ActionBtn onClick={() => toggleNote()} active={noteMode} icon={<Pencil size={16} />} label="Notes" sub={noteMode ? 'on' : 'off'} />
-        <ActionBtn onClick={autoPencil} active={autoPencilOn} icon={<Wand2 size={16} />} label="Auto" sub={autoPencilOn ? 'on' : 'off'} />
-        <ActionBtn onClick={clearCell} icon={<Eraser size={16} />} label="Erase" />
-        <ActionBtn onClick={hint} icon={<Lightbulb size={16} />} label="Hint" sub={`used ${save.hintsUsed}`} />
-        <ActionBtn onClick={toggleMute} icon={muted ? <VolumeX size={16} /> : <Volume2 size={16} />} label={muted ? 'Muted' : 'Sound'} />
-        <ActionBtn onClick={() => setScreen('home')} icon={<HomeIcon size={16} />} label="Home" />
+    <div className="flex flex-col gap-1.5 sm:gap-2 px-0.5 sm:px-1 pb-1">
+      <div className="grid grid-cols-6 gap-1 sm:gap-1.5">
+        <ActionBtn onClick={() => toggleNote()} active={noteMode} icon={<Pencil size={18} />} label="Notes" />
+        <ActionBtn onClick={autoPencil} active={autoPencilOn} icon={<Wand2 size={18} />} label="Auto" />
+        <ActionBtn onClick={clearCell} icon={<Eraser size={18} />} label="Erase" />
+        <ActionBtn onClick={hint} icon={<Lightbulb size={18} />} label="Hint" badge={save.hintsUsed > 0 ? String(save.hintsUsed) : undefined} />
+        <ActionBtn onClick={toggleMute} icon={muted ? <VolumeX size={18} /> : <Volume2 size={18} />} label={muted ? 'Muted' : 'Sound'} />
+        <ActionBtn onClick={() => setScreen('home')} icon={<HomeIcon size={18} />} label="Home" />
       </div>
-      <div className="grid grid-cols-9 gap-1.5">
+      <div className="grid grid-cols-9 gap-1 sm:gap-1.5">
         {Array.from({ length: 9 }, (_, i) => i + 1).map((d) => {
           const done = counts[d] >= 9;
+          const remaining = Math.max(0, 9 - counts[d]);
           return (
             <motion.button
               key={d}
-              whileTap={{ scale: 0.85, rotate: -4 }}
-              whileHover={done ? {} : { scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.88, rotate: -3 }}
               onClick={() => placeDigit(d)}
               disabled={done}
-              className={`relative aspect-[3/4] rounded-xl glass btn-press flex flex-col items-center justify-center font-sans font-semibold text-2xl tabular-nums ${
+              aria-label={`Place ${d}`}
+              className={`relative rounded-xl glass btn-press flex flex-col items-center justify-center font-sans font-semibold tabular-nums ${
                 done ? 'opacity-30' : ''
               } ${noteMode ? 'ring-1 ring-accent-c' : ''}`}
-              style={noteMode ? { boxShadow: '0 0 0 1px var(--accent)' } : undefined}
+              style={{
+                minHeight: 'clamp(56px, 13vw, 76px)',
+                boxShadow: noteMode ? '0 0 0 1px var(--accent)' : undefined,
+              }}
             >
-              <span>{d}</span>
+              <span className="text-[clamp(1.25rem,5.5vw,1.75rem)] leading-none">{d}</span>
+              {!done && (
+                <span className="absolute bottom-1 text-[9px] tabular-nums text-muted-c opacity-70">
+                  {remaining}
+                </span>
+              )}
               {done && <span className="absolute inset-0 rounded-xl bg-[var(--accent)]/20 pointer-events-none" />}
             </motion.button>
           );
@@ -71,19 +80,31 @@ export default function Keypad() {
   );
 }
 
-function ActionBtn({ onClick, icon, label, sub, active }: { onClick: () => void; icon: React.ReactNode; label: string; sub?: string; active?: boolean }) {
+function ActionBtn({ onClick, icon, label, badge, active }: { onClick: () => void; icon: React.ReactNode; label: string; badge?: string; active?: boolean }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.88 }}
+      whileTap={{ scale: 0.9 }}
       onClick={onClick}
-      className={`glass btn-press rounded-xl py-2 flex flex-col items-center justify-center gap-0.5 ${
-        active ? 'halo-pulse' : ''
-      }`}
-      style={active ? { background: 'rgba(var(--glass-rgb),0.8)', boxShadow: '0 0 0 1px var(--accent), 0 0 14px rgba(139,92,246,0.4)' } : undefined}
+      aria-label={label}
+      aria-pressed={active}
+      className="glass btn-press rounded-xl flex flex-col items-center justify-center gap-0.5 relative"
+      style={{
+        minHeight: '52px',
+        background: active ? 'rgba(var(--glass-rgb),0.85)' : undefined,
+        boxShadow: active ? '0 0 0 1px var(--accent), 0 0 12px rgba(139,92,246,0.35)' : undefined,
+      }}
     >
       <span style={{ color: active ? 'var(--accent-glow)' : 'currentColor' }}>{icon}</span>
-      <span className="text-[10px] font-medium leading-none">{label}</span>
-      {sub && <span className="text-[8px] uppercase tracking-widest text-muted-c">{sub}</span>}
+      <span className="text-[10px] font-medium leading-none tracking-wide">{label}</span>
+      {badge && (
+        <span
+          className="absolute top-1 right-1 text-[9px] tabular-nums px-1 rounded-full"
+          style={{ background: 'var(--accent)', color: 'white', minWidth: '14px', textAlign: 'center', lineHeight: '14px' }}
+        >
+          {badge}
+        </span>
+      )}
+      {active && <span className="absolute bottom-0.5 h-0.5 w-4 rounded-full" style={{ background: 'var(--accent-glow)' }} />}
     </motion.button>
   );
 }

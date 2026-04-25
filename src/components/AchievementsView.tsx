@@ -16,22 +16,22 @@ export default function AchievementsView() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col flex-1 px-5 py-6 gap-4"
+      className="flex flex-col flex-1 min-h-0 px-4 py-4 gap-3 overflow-y-auto"
     >
       <button
         onClick={() => setScreen('home')}
-        className="btn-press text-sm text-muted-c self-start flex items-center gap-1 hover:text-white transition"
+        className="btn-press text-sm text-muted-c self-start flex items-center gap-1 hover:text-white transition tap-target rounded-lg px-2 -ml-2"
       >
-        <ChevronLeft size={16} /> Back
+        <ChevronLeft size={18} /> Back
       </button>
-      <header>
+      <header className="flex-shrink-0">
         <h2 className="font-display text-4xl">Badges</h2>
         <p className="text-muted-c text-sm mt-1">
           {progress} unlocked · {stats.solved.easy + stats.solved.medium + stats.solved.hard} puzzles solved
         </p>
       </header>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 pb-2">
         {ACHIEVEMENTS.map((a, i) => {
           const has = unlocked.includes(a.id);
           return (

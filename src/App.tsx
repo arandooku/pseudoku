@@ -35,20 +35,32 @@ export default function App() {
   }, [screen]);
 
   return (
-    <main className="relative min-h-screen w-full flex flex-col items-center">
+    <main
+      className="relative w-full flex flex-col items-center"
+      style={{ minHeight: '100dvh' }}
+    >
       {screen === 'home' && <TitleBg />}
       <div
-        className="relative z-10 w-full max-w-[520px] flex flex-col flex-1"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)', paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
+        className={`relative z-10 w-full flex flex-col flex-1 min-h-0 ${screen === 'play' ? 'play-shell' : 'max-w-[520px]'}`}
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top), 8px)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+        }}
       >
         <AnimatePresence mode="wait">
           {screen === 'home' && <Home key="home" />}
           {screen === 'achievements' && <AchievementsView key="ach" />}
           {screen === 'play' && (
-            <div key="play" className="flex flex-col flex-1 px-3 gap-3">
+            <div key="play" className="play-grid flex flex-col flex-1 min-h-0 px-2 sm:px-3 gap-2 sm:gap-3">
               <Hud />
-              <Board />
-              <Keypad />
+              <div className="play-main flex-1 min-h-0 flex flex-col gap-2 sm:gap-3 min-w-0">
+                <div className="play-board flex-1 min-h-0 flex items-center justify-center min-w-0">
+                  <Board />
+                </div>
+                <Keypad />
+              </div>
             </div>
           )}
         </AnimatePresence>
